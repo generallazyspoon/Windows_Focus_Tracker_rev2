@@ -145,16 +145,23 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\GA_Library\GA_Library\GA_Library.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="Windows_Focus_Tracker_rev2.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\GA_Library\GA_Library\GA_Library.cpp" />
+    <ClCompile Include="File Operations.cpp" />
+    <ClCompile Include="Menus.cpp" />
+    <ClCompile Include="Program Nexus.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Support Functions.cpp" />
     <ClCompile Include="Windows_Focus_Tracker_rev2.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
