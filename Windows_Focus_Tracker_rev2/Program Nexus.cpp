@@ -15,7 +15,6 @@ namespace ProgramControl
 		extern bool regularlyWriteDataThread = true;
 		extern bool checkForUserCommandsThread = true;
 	}
-	std::timed_mutex readWrite;
 	extern bool writeRelease = false;
 	extern bool readRelease = true;
 	extern bool userHoldingKey = false;
@@ -65,7 +64,7 @@ namespace ProgramCache
 	/// create a menu object
 	extern Menu programMenu = {};
 	extern bool timeToSave = false;
-	extern tm theTime = {};
+	extern struct tm * theTime = {};
 	extern bool thisYearLeap = false;
 	extern bool lastYearLeap = false;
 	extern int lastYearSize = 365;
@@ -82,4 +81,32 @@ namespace ProgramCache
 	extern focusWindow spotlightFiveFocus[5] = {};
 
 	extern std::string systemMessage = "";
+}
+
+bool miniSANDRA::requestNexus()
+{
+	do {
+		std::this_thread::sleep_for(std::chrono::microseconds(5000 + RandomOps::range(1, 5000)));
+	} while (readWrite.try_lock());
+	return true;
+}
+
+void miniSANDRA::releaseNexus()
+{
+	readWrite.unlock();
+}
+
+bool miniSANDRA::runProgram()
+{
+	coreSANDRA.lock();
+	bool returnThisValue = runThisProgram;
+	coreSANDRA.unlock();
+	return returnThisValue;
+}
+
+void miniSANDRA::earlyShutdown()
+{
+	coreSANDRA.lock();
+	runThisProgram = false;
+	coreSANDRA.unlock();
 }

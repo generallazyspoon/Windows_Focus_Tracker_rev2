@@ -224,12 +224,12 @@ void populateFilters()
 
 void setLeapYearStatus()
 {
-	boost::local_time::time_zone_ptr boostZone(new boost::local_time::posix_time_zone(ProgramSettings::userTimeZone));
-	boost::local_time::local_date_time ldt = boost::local_time::local_sec_clock::local_time(boostZone);
-	ProgramCache::theTime = boost::local_time::to_tm(ldt);
+	time_t ldt;
+	time(&ldt);
+	localtime_s(ProgramCache::theTime, &ldt);
 
-	int thisYear = ProgramCache::theTime.tm_year;
-	int lastYear = ProgramCache::theTime.tm_year - 1;
+	int thisYear = ProgramCache::theTime->tm_year;
+	int lastYear = ProgramCache::theTime->tm_year - 1;
 	if (lastYear % 4 == 0 && (lastYear % 100 != 0 || lastYear % 400 == 0))
 		ProgramCache::lastYearSize = 366;
 	if (thisYear % 4 == 0 && (thisYear % 100 != 0 || thisYear % 400 == 0))

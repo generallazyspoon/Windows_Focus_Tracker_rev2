@@ -17,6 +17,7 @@
 #include <chrono>											// chrono::seconds, etc
 #include <atomic>											// cross-thread variables
 #include <mutex>
+#include <time.h>
 
 namespace FileOps
 {
@@ -55,11 +56,9 @@ struct focusWindow
 	bool deleteMe;											// Indicates to the program that it should be deleted from disk.
 };
 
-// std::timed_mutex readWrite;
 // Nexus namespaces
 namespace ProgramControl
 {
-	extern bool runProgram;
 	namespace Threads
 	{
 		extern bool displayThread;
@@ -69,7 +68,6 @@ namespace ProgramControl
 		extern bool regularlyWriteDataThread;
 		extern bool checkForUserCommandsThread;
 	}
-	extern std::timed_mutex readWrite;
 	extern bool userHoldingKey;
 	extern bool userHoldingEscape;
 	extern bool userInputOK;
@@ -113,7 +111,8 @@ namespace ProgramCache
 	extern Menu programMenu;
 
 	extern bool timeToSave;
-	extern tm theTime;
+	// extern tm theTime;
+	extern struct tm * theTime;
 	extern bool thisYearLeap;
 	extern bool lastYearLeap;
 	extern int thisYearSize;
@@ -202,4 +201,22 @@ void infoDisplay(Menu &passThrough);
 unsigned int groupSelectDisplay(Menu &passThrough);
 void createGroup(Menu &passThrough);
 void deleteGroup(Menu &passThrough);
+#endif
+
+#ifndef miniSANDRADefine
+#define miniSANDRADefine
+
+class miniSANDRA
+{
+private:
+	std::mutex coreSANDRA;
+	std::timed_mutex readWrite;
+	bool runThisProgram = true;
+public:
+	bool requestNexus();
+	void releaseNexus();
+	bool runProgram();
+	void earlyShutdown();
+};
+
 #endif
