@@ -821,7 +821,7 @@ void checkForUserCommands()
 							std::cout << "THERE IS NO ESCAPE oh wait is that a power button...?" << "\n\n";
 							UI::resetTextColors();
 							WFT.earlyShutdown();
-							return;
+							// return;
 						}
 					}
 				}

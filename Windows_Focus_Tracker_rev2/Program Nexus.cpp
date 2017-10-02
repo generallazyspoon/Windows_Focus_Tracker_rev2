@@ -86,6 +86,8 @@ namespace ProgramCache
 bool miniSANDRA::requestNexus()
 {
 	do {
+		if (!runThisProgram)
+			return false;
 		std::this_thread::sleep_for(std::chrono::microseconds(5000 + RandomOps::range(1, 5000)));
 	} while (readWrite.try_lock());
 	return true;
