@@ -56,6 +56,9 @@ namespace ProgramSettings
 		extern bool overrideMode = true;
 	}
 	extern std::vector<focusWindowGroup> groupList = {};
+
+	extern bool playSounds = true;
+	extern bool playFocusZoneSounds = true;
 }
 
 // fluid data
@@ -64,7 +67,7 @@ namespace ProgramCache
 	/// create a menu object
 	extern Menu programMenu = {};
 	extern bool timeToSave = false;
-	extern struct tm * theTime = {};
+	extern tm theTime = { 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 	extern bool thisYearLeap = false;
 	extern bool lastYearLeap = false;
 	extern int lastYearSize = 365;
@@ -75,6 +78,10 @@ namespace ProgramCache
 	extern POINT mouseSnapB = {};
 	extern std::vector<focusWindow> trackingSession = {};
 	extern focusWindow afkFocus = {};
+	extern int focusLimitSoundControllerCounterA = 0;
+	extern int focusLimitSoundControllerCounterB = 0;
+	extern std::string lastWindowClass = "";
+	extern std::string lastWindowTitle = "";
 
 	extern focusWindow lastFiveFocus[5] = {};
 	extern focusWindow topFiveFocus[5] = {};
@@ -109,6 +116,8 @@ bool miniSANDRA::runProgram()
 void miniSANDRA::earlyShutdown()
 {
 	coreSANDRA.lock();
+	readWrite.lock();
 	runThisProgram = false;
+	// readWrite.unlock();
 	coreSANDRA.unlock();
 }

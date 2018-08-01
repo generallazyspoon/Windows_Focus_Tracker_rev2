@@ -2,23 +2,6 @@
 #include "../../GA_Library/GA_Library/GA_Library.h"
 #include "Windows_Focus_Tracker_rev2.h"
 
-void enterMenu()
-{
-	ProgramControl::Threads::displayThread = false;
-	ProgramControl::Threads::checkForUserCommandsThread = false;
-	ProgramControl::Threads::checkUserActivityThread = false;
-	ProgramControl::Threads::regularlyWriteDataThread = false;
-	std::this_thread::sleep_for(std::chrono::seconds(2));
-}
-
-void exitMenu()
-{
-	ProgramControl::Threads::displayThread = true;
-	ProgramControl::Threads::checkForUserCommandsThread = true;
-	ProgramControl::Threads::checkUserActivityThread = true;
-	ProgramControl::Threads::regularlyWriteDataThread = true;
-}
-
 namespace WFT_Menus
 {
 	void populateOverrideMenu(Menu &passThrough) {
@@ -96,14 +79,15 @@ void WFT_Menus::overrideMenu(Menu &passThrough)
 		UI::setTextColors(UI::black, UI::light_red);
 		std::cout << "Override has changed.  Activate Override mode ";
 		bool engageOverride = UI::yesNo();
+		UI::setTextColors(UI::black, UI::dark_green);
 		if (engageOverride)
 		{
-			ProgramSettings::detectionMode = 2;
-			UI::setTextColors(UI::black, UI::dark_green);
+			ProgramSettings::detectionMode = 2;		
 			std::cout << "\n\n";
 			std::cout << "Override mode activated...";
 			std::cout << "\n\n";
 		}
+		else std::cout << "\n\n";
 	}
 	std::cout << "Returning to tracker.  (Please wait...)";
 	std::this_thread::sleep_for(std::chrono::seconds(2));

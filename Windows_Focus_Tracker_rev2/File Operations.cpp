@@ -43,6 +43,8 @@ void readSettings()
 	tempStringVector = StringTools::parseStrings(readSettingsFile.infoDatabase[15].data[0], ',');
 	for (unsigned int x = 0; x < tempStringVector.size() - 1; x++)
 		ProgramSettings::lastFiveFocusClass[x] = tempStringVector[x];
+	ProgramSettings::playSounds = StringTools::onOffBool(readSettingsFile.infoDatabase[16].data[0]);
+	ProgramSettings::playFocusZoneSounds = StringTools::onOffBool(readSettingsFile.infoDatabase[17].data[0]);
 	// report
 	UI::clearIt();
 	UI::setTextColors(UI::black, UI::dark_green);
@@ -83,6 +85,10 @@ void writeSettings()
 	for (unsigned int x = 0; x < 4; x++)
 		writeSettingsFile << ProgramCache::lastFiveFocus[x].windowClass << ",";
 	writeSettingsFile << ProgramCache::lastFiveFocus[4].windowClass << "\n";
+	writeSettingsFile << "playSounds:  ";
+	writeSettingsFile << StringTools::onOffString(ProgramSettings::playSounds) << "\n";
+	writeSettingsFile << "playFocusLimitSounds:  ";
+	writeSettingsFile << StringTools::onOffString(ProgramSettings::playFocusZoneSounds) << "\n";
 	// close the file stream
 	writeSettingsFile.close();
 }
@@ -124,7 +130,7 @@ void readData()
 			xContainer.conduits[y] = StringTools::onOffBool(tempConduitVector[y]);
 		temporaryVector = StringTools::parseUnsignedInts(readDataFiles.fileLines[6]);
 		for (unsigned int y = 0; y < 8; y++)
-			xContainer.focusLimits[y] = temporaryVector[y];
+			xContainer.focusZones[y] = temporaryVector[y];
 		temporaryVector = StringTools::parseUnsignedInts(readDataFiles.fileLines[7]);
 		for (unsigned int y = 0; y < 2; y++)
 			xContainer.warningTimings[y] = temporaryVector[y];
@@ -192,9 +198,9 @@ void writeData()
 				if (y != 23)
 					writeIt << ","; }
 			writeIt << "\n";
-			writeIt << "Focus Limits:  ";
+			writeIt << "Focus Zones:  ";
 			for (unsigned int y = 0; y < 8; y++) {
-				writeIt << ProgramCache::trackingSession[x].focusLimits[y];
+				writeIt << ProgramCache::trackingSession[x].focusZones[y];
 				if (y != 8)
 					writeIt << ", "; }
 			writeIt << "\n";
@@ -239,9 +245,6 @@ void writeData()
 		writeIt.close(); 
 		ProgramCache::afkFocus.writeMe = false;
 	}
-
-	// test
-	std::this_thread::sleep_for(std::chrono::minutes(2));
 }
 
 /// experimental (needs testing)

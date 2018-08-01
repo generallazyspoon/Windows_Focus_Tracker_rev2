@@ -4,7 +4,7 @@
 // Change displayData to be more responsive to keys by displaying data first, before imposing loop wait cycles (and cancelling early if a key or trigger is found) [or moving current wait cycles to end of displayData?]
 // Manual Data save
 // Add another tracking form (like conduits, but...?)
-// Add automatic nonsense-sensing:  Auto-handle focuses with < x time:
+// Add automatic nonsense-sensing(regular consolidation):  Auto-handle focuses with < x time:
 //		1-Check for time constraint (Long interval)
 //		2-If focus < x time, increment flag for special handling bool, else reset flags
 //		3-If y [5?] # of flags reached, set special handling bool to true, skip 4
@@ -14,7 +14,7 @@
 // ^Auto-blacklist class or title?
 // ^Just set a minimum of 5 minutes (reset every day?) for tracking focuses?
 // ^^If it doesn't make it into the minimum, push into a special focus for... "Various intermediary focuses"? [I kind of like this one the best]
-// Auto-scanning for multiple items, putting similar items in a [white/black][titleClass][group][what?]
+// Auto-scanning for multiple items, putting similar items in a [white/black][titleClass][group][that is, auto-whitelisting/-whiteclassing, etc.]
 
 // Override creation rework:
 /*
@@ -49,7 +49,7 @@ _ = function programmed
 ^_ (g) manage groups >> transfer hotkey assignment to "g"
    (h) toggle groups displayed in the tracker >> use a toggleSelect w/no max
  _&(i) info >> simple menu [in progress]
-  &(l) focus limits >> create UI::selectorRange or modify UI::selector to take a range instead of just max
+  &(l) focus zones >> create UI::selectorRange or modify UI::selector to take a range instead of just max
 ^_&(o) override toggle >> transfer hotkey assignment to "o"
 ^_&(p) override management >> transfer hotkey assignment to "p"
 ^_&(q) conduit mode toggle >> transfer hotkey assignment to "q"
@@ -72,7 +72,8 @@ miniSANDRA WFT;
 
 int main()
 {
-	/// load settings & data
+	waveOutSetVolume(NULL, 0x33333333);
+	// load settings & data
 	readSettings();
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 	readData();
@@ -81,25 +82,26 @@ int main()
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 	UI::clearIt();
 
-	/// populate other fluid cache
+	// populate other fluid cache
 	setLeapYearStatus();
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 	populateFilters();
 	std::this_thread::sleep_for(std::chrono::seconds(1));
 
+	// report
 	UI::clearIt();
 	UI::setTextColors(UI::black, UI::dark_green);
 	std::cout << "Starting Focus Tracker.  (Please wait...)";
 	UI::resetTextColors();
 
-	/// start user activity thread
+	// start user activity thread
 	std::thread eyes(checkUserActivity);
 	std::thread hands(regularlyWriteData);
 	std::thread skin(checkForUserCommands);
 	std::thread mouth(displayData);
 	std::thread continuity(getTheTime);
 	std::thread consciousness(checkFocus);
-
+	//join the threads to main()
 	eyes.join();
 	hands.join();
 	skin.join();
@@ -107,19 +109,20 @@ int main()
 	continuity.join();
 	consciousness.join();
 
-	/// saves on exit
-	
+	// saves on exit
 	writeSettings();
 	Sleep(100);
 	writeData();
 	Sleep(100);
 	writeGroups();
 	
+	// report
 	UI::setTextColors(UI::black, UI::white);
 	std::cout << "Saved:  Data, Groups, Settings";
 	std::cout << "\n";
 	UI::resetTextColors();
 
+	// bye!
 	return 0;
 }
 
@@ -131,7 +134,7 @@ void getTheTime()
 			if (ProgramControl::Threads::getTheTimeThread) {
 				time_t ldt;
 				time(&ldt);
-				localtime_s(ProgramCache::theTime, &ldt);
+				localtime_s(&ProgramCache::theTime, &ldt);
 				/*
 				boost::local_time::time_zone_ptr boostZone(new boost::local_time::posix_time_zone(ProgramSettings::userTimeZone));
 				boost::local_time::local_date_time ldt = boost::local_time::local_sec_clock::local_time(boostZone);
@@ -194,6 +197,7 @@ void checkFocus()
 	bool newEntry = true;
 	bool blacklistedEntry = false;
 	bool titleGroupPriority = false;
+	unsigned int focusLimitWarningSpacer = 0;
 
 	while (WFT.runProgram())
 	{
@@ -224,10 +228,9 @@ void checkFocus()
 						// convert the strings:
 						titleContainer = W2A(foregroundTitle);
 						classContainer = W2A(foregroundClass);
-
+						// clean up the memory we just converted, we don't need that any more
 						delete[] foregroundTitle;
 						delete[] foregroundClass;
-
 						// format the strings
 						StringTools::formatForFileIO(titleContainer, false);
 						StringTools::formatForFileIO(classContainer, false);
@@ -240,7 +243,6 @@ void checkFocus()
 									blacklistedEntry = true;
 									break;
 								}
-
 						// check for blacklisted class (to ignore statistics gathering)
 						if (ProgramSettings::classBlack.size() > 0)
 							for (unsigned int x = 0; x < ProgramSettings::classBlack.size(); x++)
@@ -249,7 +251,6 @@ void checkFocus()
 									blacklistedEntry = true;
 									break;
 								}
-
 						// check for whitelisted keyword in title (for condensing title)
 						if (!blacklistedEntry)
 							if (ProgramSettings::titleWhite.size() > 0)
@@ -259,7 +260,6 @@ void checkFocus()
 										titleContainer = ProgramSettings::titleWhite[x];
 										break;
 									}
-
 						// check for whitelisted keyword in class (for condensing class)
 						if (!blacklistedEntry)
 							if (ProgramSettings::classWhite.size() > 0)
@@ -269,7 +269,6 @@ void checkFocus()
 										classContainer = ProgramSettings::classWhite[x];
 										break;
 									}
-
 						// check for title group (for combining data by title keyword)
 						if (!blacklistedEntry)
 							for (unsigned int x = 0; x < ProgramSettings::titleGroup.size(); x++)
@@ -278,7 +277,6 @@ void checkFocus()
 									titleContainer = ProgramSettings::titleGroup[x];
 									titleGroupPriority = true;
 								}
-
 						// check for class group (for combining data by class keyword)
 						if (!blacklistedEntry && !titleGroupPriority)
 							for (unsigned int x = 0; x < ProgramSettings::classGroup.size(); x++)
@@ -296,8 +294,14 @@ void checkFocus()
 										// cycle its stored clock
 										updateTotalDayHourMinSec(ProgramCache::trackingSession[x]);
 										// update at the proper write block at entry [x]
-										ProgramCache::trackingSession[x].yearlyStats[ProgramCache::theTime->tm_yday][ProgramCache::theTime->tm_hour] += ProgramSettings::scanInterval;
+										ProgramCache::trackingSession[x].yearlyStats[ProgramCache::theTime.tm_yday][ProgramCache::theTime.tm_hour] += ProgramSettings::scanInterval;
 										ProgramCache::trackingSession[x].writeMe = true;
+										// Populate the lastWindowTitle and lastWindowClass for the focus limit alert system
+										ProgramCache::lastWindowTitle = ProgramCache::trackingSession[x].windowTitle;
+										ProgramCache::lastWindowClass = ProgramCache::trackingSession[x].windowClass;
+										if (ProgramSettings::playSounds)
+											if (ProgramSettings::playFocusZoneSounds)
+												playFocusZoneSound(ProgramCache::trackingSession[x]);
 										// push to display filter
 										displayFilterBase(ProgramCache::trackingSession[x]);
 										// use a bool to skip the next code
@@ -309,6 +313,7 @@ void checkFocus()
 											ProgramCache::userActivity = true;
 										}
 										else ProgramControl::Threads::checkUserActivityThread = true;
+										break;
 									}
 							// if not found
 							if (newEntry && ProgramCache::userActivity) {
@@ -321,15 +326,21 @@ void checkFocus()
 								xContainer.writeMe = true;
 								// push object into session
 								ProgramCache::trackingSession.push_back(xContainer);
-								ProgramCache::trackingSession[ProgramCache::trackingSession.size() - 1].yearlyStats[ProgramCache::theTime->tm_yday][ProgramCache::theTime->tm_hour] += 5;
+								ProgramCache::trackingSession[ProgramCache::trackingSession.size() - 1].yearlyStats[ProgramCache::theTime.tm_yday][ProgramCache::theTime.tm_hour] += 5;
 								updateTotalDayHourMinSec(ProgramCache::trackingSession[ProgramCache::trackingSession.size() - 1]);
+								// Populate the lastWindowTitle and lastWindowClass for the focus limit alert system
+								ProgramCache::lastWindowTitle = ProgramCache::trackingSession[ProgramCache::trackingSession.size() - 1].windowTitle;
+								ProgramCache::lastWindowClass = ProgramCache::trackingSession[ProgramCache::trackingSession.size() - 1].windowClass;
+								if (ProgramSettings::playSounds)
+									if (ProgramSettings::playFocusZoneSounds)
+										playFocusZoneSound(xContainer);
 								// push to display filter
 								displayFilterBase(xContainer);
 							}
 						}
 					}
 					else if (ProgramSettings::detectionMode == 1 && !ProgramCache::userActivity) {
-						ProgramCache::afkFocus.yearlyStats[ProgramCache::theTime->tm_yday][ProgramCache::theTime->tm_hour] += 5;
+						ProgramCache::afkFocus.yearlyStats[ProgramCache::theTime.tm_yday][ProgramCache::theTime.tm_hour] += 5;
 						updateTotalDayHourMinSec(ProgramCache::afkFocus);
 						displayFilterBase(ProgramCache::afkFocus);
 						ProgramCache::afkFocus.writeMe = true;
@@ -346,8 +357,10 @@ void checkFocus()
 						for (unsigned int x = 0; x < ProgramCache::trackingSession.size(); x++)
 							if (ProgramCache::trackingSession[x].windowClass == "[Custom Override]" &&
 								ProgramSettings::currentOverride == ProgramCache::trackingSession[x].windowTitle) {
-								ProgramCache::trackingSession[x].yearlyStats[ProgramCache::theTime->tm_yday][ProgramCache::theTime->tm_hour] += 5;
+								ProgramCache::trackingSession[x].yearlyStats[ProgramCache::theTime.tm_yday][ProgramCache::theTime.tm_hour] += 5;
 								updateTotalDayHourMinSec(ProgramCache::trackingSession[x]);
+								ProgramCache::lastWindowTitle = ProgramCache::trackingSession[x].windowTitle;
+								ProgramCache::lastWindowClass = ProgramCache::trackingSession[x].windowClass;
 								displayFilterBase(ProgramCache::trackingSession[x]);
 								if (ProgramCache::trackingSession[x].overridesAFK) {
 									ProgramControl::Threads::checkUserActivityThread = false;
@@ -416,7 +429,7 @@ void displayData()
 				if (ProgramControl::displayOK) {
 					UI::clearIt();
 					displayDisplayStatus();
-					std::cout << "--------------------------------" << "\n\n";
+					std::cout << "<>----<>----<>----<>" << "\n\n";
 					// off
 					if (ProgramSettings::Display::displayMode == 0)
 					{
@@ -434,7 +447,7 @@ void displayData()
 							std::cout << ProgramCache::lastFiveFocus[x].windowClass;
 							UI::resetTextColors();
 							std::cout << " - ";
-							determineFocusColor(ProgramCache::lastFiveFocus[x]);
+							processFocusLimits(ProgramCache::lastFiveFocus[x]);
 							std::cout << ProgramCache::lastFiveFocus[x].windowTitle << "\n";
 							displayChronoStats(ProgramCache::lastFiveFocus[x]);
 							UI::resetTextColors();
@@ -449,7 +462,7 @@ void displayData()
 							std::cout << ProgramCache::topFiveFocus[x].windowClass;
 							UI::resetTextColors();
 							std::cout << " - ";
-							determineFocusColor(ProgramCache::topFiveFocus[x]);
+							processFocusLimits(ProgramCache::topFiveFocus[x]);
 							std::cout << ProgramCache::topFiveFocus[x].windowTitle << "\n";
 							displayChronoStats(ProgramCache::topFiveFocus[x]);
 							UI::resetTextColors();
@@ -495,7 +508,7 @@ void displayData()
 													for (unsigned int b = 0; b < 24; b++)
 														xContainer.yearlyStats[a][b] += ProgramCache::trackingSession[z].yearlyStats[a][b];
 												for (unsigned int a = 0; a < 8; a++)
-													xContainer.focusLimits[a] += ProgramCache::trackingSession[z].focusLimits[a];
+													xContainer.focusZones[a] += ProgramCache::trackingSession[z].focusZones[a];
 											}
 									}
 									// display
@@ -517,7 +530,12 @@ void displayData()
 						// debug info (if any)
 						std::cout << "\n\n";
 					}
-					std::cout << "--------------------------------" << "\n\n";
+					std::cout << "<>----<>----<>----<>" << "\n\n";
+					UI::setTextColors(UI::black, UI::dark_green);
+					std::cout << "<Press a key to send a command to WFT> " << "\n\n";
+					UI::resetTextColors();
+					std::cout << "<>----<>----<>----<>" << "\n\n";
+
 				}
 			}
 			WFT.releaseNexus();
@@ -541,7 +559,7 @@ void regularlyWriteData()
 			if (ProgramControl::Threads::regularlyWriteDataThread)
 			{
 				for (unsigned int timeCheck = 0; timeCheck < 12; timeCheck++)
-					if (ProgramCache::theTime->tm_min == writeTimes[timeCheck]) {
+					if (ProgramCache::theTime.tm_min == writeTimes[timeCheck]) {
 						writeSettings();
 						std::this_thread::sleep_for(std::chrono::seconds(1));
 						writeGroups();
@@ -618,6 +636,36 @@ void checkForUserCommands()
 				}
 				FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
 				descriptionManagement(ProgramCache::programMenu);
+			}
+			// "m" - toggle all sounds
+			else if (GetAsyncKeyState(0x4D))
+			{
+				ProgramCache::systemMessage = "Toggling all sound.  (Please wait...)";
+				ProgramControl::userInputOK = false;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				if (GetAsyncKeyState(0x4D) & 0x8000)
+				{
+					ProgramControl::userHoldingKey = true;
+					UI::setTextColors(UI::black, UI::light_red);
+					std::cout << "You are not actually plugging someone's pie hole.  Chill out." << "\n\n";
+					UI::resetTextColors();
+				}
+				ProgramSettings::playSounds ^= TRUE; // bitwise flip XOR
+			}
+			// "n" - toggle Focus Limit sounds
+			else if (GetAsyncKeyState(0x4E))
+			{
+				ProgramCache::systemMessage = "Toggling Focus Zone sounds.  (Please wait...)";
+				ProgramControl::userInputOK = false;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				if (GetAsyncKeyState(0x4E) & 0x8000)
+				{
+					ProgramControl::userHoldingKey = true;
+					UI::setTextColors(UI::black, UI::light_red);
+					std::cout << "There's no need for that." << "\n\n";
+					UI::resetTextColors();
+				}
+				ProgramSettings::playFocusZoneSounds ^= TRUE; // bitwise flip XOR
 			}
 			// "o" - toggle Override state
 			else if (GetAsyncKeyState(0x4F))
@@ -795,7 +843,7 @@ void checkForUserCommands()
 			}
 			else if (GetAsyncKeyState(VK_BACK))
 			{
-				ProgramCache::systemMessage = "No function associated with this key.  (Please wait...)";
+				ProgramCache::systemMessage = "Debug Key.";
 				ProgramControl::userInputOK = false;
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 				if (GetAsyncKeyState(VK_BACK) & 0x8000)
@@ -821,7 +869,8 @@ void checkForUserCommands()
 							std::cout << "THERE IS NO ESCAPE oh wait is that a power button...?" << "\n\n";
 							UI::resetTextColors();
 							WFT.earlyShutdown();
-							// return;
+							return;
+							// break;
 						}
 					}
 				}
@@ -869,15 +918,15 @@ void displayChronoStats(focusWindow &passThrough)
 	{
 		UI::setTextColors(UI::black, UI::dark_gray);
 		std::cout << std::setprecision(2) <<
-			double(passThrough.yearlyStats[ProgramCache::theTime->tm_yday][ProgramCache::theTime->tm_hour]) / 60 << " minutes (this hour block)." << "\n\n";
+			double(passThrough.yearlyStats[ProgramCache::theTime.tm_yday][ProgramCache::theTime.tm_hour]) / 60 << " minutes (this hour block)." << "\n\n";
 		UI::resetTextColors();
 	}
 	/// this day
 	if (ProgramSettings::Display::displayChronologicalType == 2)
 	{
 		double dailyStats = 0;
-		for (int x = 0; x <= ProgramCache::theTime->tm_hour; x++)
-			dailyStats += passThrough.yearlyStats[ProgramCache::theTime->tm_yday][x];
+		for (int x = 0; x <= ProgramCache::theTime.tm_hour; x++)
+			dailyStats += passThrough.yearlyStats[ProgramCache::theTime.tm_yday][x];
 		int thisFocusColor = determineFocusLimitColor(passThrough);
 		UI::setTextColors(UI::black, thisFocusColor);
 		std::cout << std::setprecision(2) << dailyStats / 60 / 60;
@@ -889,30 +938,30 @@ void displayChronoStats(focusWindow &passThrough)
 	{
 		double weekTotal = 0;
 		// if crossing backwards over year line
-		if (ProgramCache::theTime->tm_yday <= 5)
+		if (ProgramCache::theTime.tm_yday <= 5)
 		{
 			// calculate the number of days which will spill over
-			int overflow = 6 - ProgramCache::theTime->tm_yday;
+			int overflow = 6 - ProgramCache::theTime.tm_yday;
 			// grab the overflow data
 			for (int x = 0; x < overflow; x++)
 				for (int y = 0; y < 24; y++)
 					weekTotal += passThrough.yearlyStats[ProgramCache::lastYearSize - x][y];
 			// grab the data prior to the current day
-			if (ProgramCache::theTime->tm_yday > 0)
-				for (int x = 0; x < ProgramCache::theTime->tm_yday; x++)
+			if (ProgramCache::theTime.tm_yday > 0)
+				for (int x = 0; x < ProgramCache::theTime.tm_yday; x++)
 					for (unsigned int y = 0; y < 24; y++)
-						weekTotal += passThrough.yearlyStats[ProgramCache::theTime->tm_yday][y];
+						weekTotal += passThrough.yearlyStats[ProgramCache::theTime.tm_yday][y];
 			// grab the data for today
-			for (int x = 0; x <= ProgramCache::theTime->tm_hour; x++)
-				weekTotal += passThrough.yearlyStats[ProgramCache::theTime->tm_yday][x];
+			for (int x = 0; x <= ProgramCache::theTime.tm_hour; x++)
+				weekTotal += passThrough.yearlyStats[ProgramCache::theTime.tm_yday][x];
 		}
 		// all other inquiries
-		else if (ProgramCache::theTime->tm_yday >= 6) {
+		else if (ProgramCache::theTime.tm_yday >= 6) {
 			for (int x = 1; x <= 6; x++)
 				for (unsigned int y = 0; y < 24; y++)
-					weekTotal += passThrough.yearlyStats[ProgramCache::theTime->tm_yday - x][y];
-			for (int x = 0; x <= ProgramCache::theTime->tm_hour; x++)
-				weekTotal += passThrough.yearlyStats[ProgramCache::theTime->tm_yday][x]; }
+					weekTotal += passThrough.yearlyStats[ProgramCache::theTime.tm_yday - x][y];
+			for (int x = 0; x <= ProgramCache::theTime.tm_hour; x++)
+				weekTotal += passThrough.yearlyStats[ProgramCache::theTime.tm_yday][x]; }
 		int thisFocusColor = determineFocusLimitColor(passThrough);
 		UI::setTextColors(UI::black, thisFocusColor);
 		std::cout << std::setprecision(2) << weekTotal / 60 / 60;
@@ -925,36 +974,36 @@ void displayChronoStats(focusWindow &passThrough)
 		double monthTotal = 0;
 		int firstDayOfMonth = 0;
 		// month array
-		if (ProgramCache::theTime->tm_mon == 0)
+		if (ProgramCache::theTime.tm_mon == 0)
 			firstDayOfMonth = 0;
-		else if (ProgramCache::theTime->tm_mon == 1)
+		else if (ProgramCache::theTime.tm_mon == 1)
 			firstDayOfMonth = 31;
-		else if (ProgramCache::theTime->tm_mon == 2)
+		else if (ProgramCache::theTime.tm_mon == 2)
 			firstDayOfMonth = 59 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 3)
+		else if (ProgramCache::theTime.tm_mon == 3)
 			firstDayOfMonth = 81 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 4)
+		else if (ProgramCache::theTime.tm_mon == 4)
 			firstDayOfMonth = 112 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 5)
+		else if (ProgramCache::theTime.tm_mon == 5)
 			firstDayOfMonth = 144 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 6)
+		else if (ProgramCache::theTime.tm_mon == 6)
 			firstDayOfMonth = 175 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 7)
+		else if (ProgramCache::theTime.tm_mon == 7)
 			firstDayOfMonth = 207 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 8)
+		else if (ProgramCache::theTime.tm_mon == 8)
 			firstDayOfMonth = 239 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 9)
+		else if (ProgramCache::theTime.tm_mon == 9)
 			firstDayOfMonth = 270 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 10)
+		else if (ProgramCache::theTime.tm_mon == 10)
 			firstDayOfMonth = 302 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 11)
+		else if (ProgramCache::theTime.tm_mon == 11)
 			firstDayOfMonth = 333 + ProgramCache::leapModifier;
 		// math
-		for (int x = firstDayOfMonth; x < ProgramCache::theTime->tm_yday; x++)
+		for (int x = firstDayOfMonth; x < ProgramCache::theTime.tm_yday; x++)
 			for (unsigned int y = 0; y < 24; y++)
 				monthTotal += passThrough.yearlyStats[x][y];
-		for (int x = 0; x <= ProgramCache::theTime->tm_hour; x++)
-			monthTotal += passThrough.yearlyStats[ProgramCache::theTime->tm_yday][x];
+		for (int x = 0; x <= ProgramCache::theTime.tm_hour; x++)
+			monthTotal += passThrough.yearlyStats[ProgramCache::theTime.tm_yday][x];
 		// output	
 		int thisFocusColor = determineFocusLimitColor(passThrough);
 		UI::setTextColors(UI::black, thisFocusColor);
@@ -966,11 +1015,11 @@ void displayChronoStats(focusWindow &passThrough)
 	if (ProgramSettings::Display::displayChronologicalType == 5)
 	{
 		double yearTotal = 0;
-		for (int x = 0; x < ProgramCache::theTime->tm_yday; x++)
+		for (int x = 0; x < ProgramCache::theTime.tm_yday; x++)
 			for (unsigned int y = 0; y < 24; y++)
 				yearTotal += passThrough.yearlyStats[x][y];
-		for (int x = 0; x < ProgramCache::theTime->tm_hour; x++)
-			yearTotal += passThrough.yearlyStats[ProgramCache::theTime->tm_yday][x];
+		for (int x = 0; x < ProgramCache::theTime.tm_hour; x++)
+			yearTotal += passThrough.yearlyStats[ProgramCache::theTime.tm_yday][x];
 		int thisFocusColor = determineFocusLimitColor(passThrough);
 		UI::setTextColors(UI::black, thisFocusColor);
 		std::cout << std::setprecision(2) <<
@@ -988,50 +1037,50 @@ int determineFocusLimitColor(focusWindow &passThrough)
 	if (ProgramSettings::Display::displayChronologicalType == 2)
 	{
 		double dayTotal = 0;
-		for (int x = 0; x <= ProgramCache::theTime->tm_hour; x++)
-			dayTotal += passThrough.yearlyStats[ProgramCache::theTime->tm_yday][x];
+		for (int x = 0; x <= ProgramCache::theTime.tm_hour; x++)
+			dayTotal += passThrough.yearlyStats[ProgramCache::theTime.tm_yday][x];
 
-		if (double(passThrough.focusLimits[1]) <= dayTotal / 60 / 60)
+		if (double(passThrough.focusZones[1]) <= dayTotal / 60 / 60)
 			appropriateColor = UI::light_green;
-		else if (double(passThrough.focusLimits[1]) > dayTotal / 60 / 60 && double(passThrough.focusLimits[0]) < dayTotal / 60 / 60)
+		else if (double(passThrough.focusZones[1]) > dayTotal / 60 / 60 && double(passThrough.focusZones[0]) < dayTotal / 60 / 60)
 			appropriateColor = UI::light_yellow;
-		else if (double(passThrough.focusLimits[0]) >= dayTotal / 60 / 60)
+		else if (double(passThrough.focusZones[0]) >= dayTotal / 60 / 60)
 			appropriateColor = UI::light_red;
 	}
 	else if (ProgramSettings::Display::displayChronologicalType == 3)
 	{
 		double weekTotal = 0;
 		// if crossing backwards over year line
-		if (ProgramCache::theTime->tm_yday <= 5)
+		if (ProgramCache::theTime.tm_yday <= 5)
 		{
 			// calculate the number of days which will spill over
-			int overflow = 6 - ProgramCache::theTime->tm_yday;
+			int overflow = 6 - ProgramCache::theTime.tm_yday;
 			// grab the overflow data
 			for (int x = 0; x < overflow; x++)
 				for (int y = 0; y < 24; y++)
 					weekTotal += passThrough.yearlyStats[ProgramCache::lastYearSize - x][y];
 			// grab the data prior to the current day
-			if (ProgramCache::theTime->tm_yday > 0)
-				for (int x = 0; x < ProgramCache::theTime->tm_yday; x++)
+			if (ProgramCache::theTime.tm_yday > 0)
+				for (int x = 0; x < ProgramCache::theTime.tm_yday; x++)
 					for (unsigned int y = 0; y < 24; y++)
-						weekTotal += passThrough.yearlyStats[ProgramCache::theTime->tm_yday][y];
+						weekTotal += passThrough.yearlyStats[ProgramCache::theTime.tm_yday][y];
 			// grab the data for today
-			for (int x = 0; x <= ProgramCache::theTime->tm_hour; x++)
-				weekTotal += passThrough.yearlyStats[ProgramCache::theTime->tm_yday][x];
+			for (int x = 0; x <= ProgramCache::theTime.tm_hour; x++)
+				weekTotal += passThrough.yearlyStats[ProgramCache::theTime.tm_yday][x];
 		}
 		// all other inquiries
-		else if (ProgramCache::theTime->tm_yday >= 6) {
+		else if (ProgramCache::theTime.tm_yday >= 6) {
 			for (int x = 1; x <= 6; x++)
 				for (unsigned int y = 0; y < 24; y++)
-					weekTotal += passThrough.yearlyStats[ProgramCache::theTime->tm_yday - x][y];
-			for (int x = 0; x <= ProgramCache::theTime->tm_hour; x++)
-				weekTotal += passThrough.yearlyStats[ProgramCache::theTime->tm_yday][x];
+					weekTotal += passThrough.yearlyStats[ProgramCache::theTime.tm_yday - x][y];
+			for (int x = 0; x <= ProgramCache::theTime.tm_hour; x++)
+				weekTotal += passThrough.yearlyStats[ProgramCache::theTime.tm_yday][x];
 		}
-		if (double(passThrough.focusLimits[3]) <= weekTotal / 60 / 60)
+		if (double(passThrough.focusZones[3]) <= weekTotal / 60 / 60)
 			appropriateColor = UI::light_green;
-		else if (double(passThrough.focusLimits[3]) > weekTotal / 60 / 60 && double(passThrough.focusLimits[2]) < weekTotal / 60 / 60)
+		else if (double(passThrough.focusZones[3]) > weekTotal / 60 / 60 && double(passThrough.focusZones[2]) < weekTotal / 60 / 60)
 			appropriateColor = UI::light_yellow;
-		else if (double(passThrough.focusLimits[2]) >= weekTotal / 60 / 60)
+		else if (double(passThrough.focusZones[2]) >= weekTotal / 60 / 60)
 			appropriateColor = UI::light_red;
 
 
@@ -1041,42 +1090,42 @@ int determineFocusLimitColor(focusWindow &passThrough)
 		double monthTotal = 0;
 		int firstDayOfMonth = 0;
 		// month array
-		if (ProgramCache::theTime->tm_mon == 0)
+		if (ProgramCache::theTime.tm_mon == 0)
 			firstDayOfMonth = 0;
-		else if (ProgramCache::theTime->tm_mon == 1)
+		else if (ProgramCache::theTime.tm_mon == 1)
 			firstDayOfMonth = 31;
-		else if (ProgramCache::theTime->tm_mon == 2)
+		else if (ProgramCache::theTime.tm_mon == 2)
 			firstDayOfMonth = 59 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 3)
+		else if (ProgramCache::theTime.tm_mon == 3)
 			firstDayOfMonth = 81 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 4)
+		else if (ProgramCache::theTime.tm_mon == 4)
 			firstDayOfMonth = 112 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 5)
+		else if (ProgramCache::theTime.tm_mon == 5)
 			firstDayOfMonth = 144 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 6)
+		else if (ProgramCache::theTime.tm_mon == 6)
 			firstDayOfMonth = 175 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 7)
+		else if (ProgramCache::theTime.tm_mon == 7)
 			firstDayOfMonth = 207 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 8)
+		else if (ProgramCache::theTime.tm_mon == 8)
 			firstDayOfMonth = 239 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 9)
+		else if (ProgramCache::theTime.tm_mon == 9)
 			firstDayOfMonth = 270 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 10)
+		else if (ProgramCache::theTime.tm_mon == 10)
 			firstDayOfMonth = 302 + ProgramCache::leapModifier;
-		else if (ProgramCache::theTime->tm_mon == 11)
+		else if (ProgramCache::theTime.tm_mon == 11)
 			firstDayOfMonth = 333 + ProgramCache::leapModifier;
 		// math
-		for (int x = firstDayOfMonth; x < ProgramCache::theTime->tm_yday; x++)
+		for (int x = firstDayOfMonth; x < ProgramCache::theTime.tm_yday; x++)
 			for (unsigned int y = 0; y < 24; y++)
 				monthTotal += passThrough.yearlyStats[x][y];
-		for (int x = 0; x <= ProgramCache::theTime->tm_hour; x++)
-			monthTotal += passThrough.yearlyStats[ProgramCache::theTime->tm_yday][x];
+		for (int x = 0; x <= ProgramCache::theTime.tm_hour; x++)
+			monthTotal += passThrough.yearlyStats[ProgramCache::theTime.tm_yday][x];
 
-		if (double(passThrough.focusLimits[5]) <= monthTotal / 60 / 60)
+		if (double(passThrough.focusZones[5]) <= monthTotal / 60 / 60)
 			appropriateColor = UI::light_green;
-		else if (double(passThrough.focusLimits[5]) > monthTotal / 60 / 60 && double(passThrough.focusLimits[4]) < monthTotal / 60 / 60)
+		else if (double(passThrough.focusZones[5]) > monthTotal / 60 / 60 && double(passThrough.focusZones[4]) < monthTotal / 60 / 60)
 			appropriateColor = UI::light_yellow;
-		else if (double(passThrough.focusLimits[4]) >= monthTotal / 60 / 60)
+		else if (double(passThrough.focusZones[4]) >= monthTotal / 60 / 60)
 			appropriateColor = UI::light_red;
 
 	}
@@ -1088,11 +1137,11 @@ int determineFocusLimitColor(focusWindow &passThrough)
 		yearTotal += passThrough.totalDayHourMinSec[2] / 60;
 		yearTotal += passThrough.totalDayHourMinSec[3] / 60;
 
-		if (double(passThrough.focusLimits[7]) <= yearTotal / 60 / 60)
+		if (double(passThrough.focusZones[7]) <= yearTotal / 60 / 60)
 			appropriateColor = UI::light_green;
-		else if (double(passThrough.focusLimits[7]) > yearTotal / 60 / 60 && double(passThrough.focusLimits[6]) < yearTotal / 60 / 60)
+		else if (double(passThrough.focusZones[7]) > yearTotal / 60 / 60 && double(passThrough.focusZones[6]) < yearTotal / 60 / 60)
 			appropriateColor = UI::light_yellow;
-		else if (double(passThrough.focusLimits[6]) >= yearTotal / 60 / 60)
+		else if (double(passThrough.focusZones[6]) >= yearTotal / 60 / 60)
 			appropriateColor = UI::light_red;
 
 	}
@@ -1106,7 +1155,7 @@ void displayDisplayStatus()
 	// Display mode
 	{
 		colorScheme[0] = UI::black;
-		colorScheme[1] = UI::dark_green;
+		colorScheme[1] = UI::light_green;
 		UI::setTextColors(colorScheme[0], colorScheme[1]);
 		std::cout << "(z) Display:		";
 		// none
@@ -1419,24 +1468,105 @@ void displayDisplayStatus()
 		std::cout << ProgramSettings::currentOverride;
 		std::cout << "\n";
 	}
+	// Program Sound status
+	{
+		colorScheme[0] = UI::black;
+		colorScheme[1] = UI::light_gray;
+		UI::setTextColors(colorScheme[0], colorScheme[1]);
+		std::cout << "(m) Sounds:		";
+		// on
+		if (!ProgramSettings::playSounds)
+		{
+			std::cout << "[";
+			UI::setTextColors(colorScheme[1], colorScheme[0]);
+			std::cout << "Off";
+			UI::setTextColors(colorScheme[0], colorScheme[1]);
+			std::cout << "] [";
+			std::cout << "On";
+			std::cout << "]";
+		}
+		// off
+		else if (ProgramSettings::playSounds)
+		{
+			std::cout << "[";
+			std::cout << "Off";
+			std::cout << "] [";
+			UI::setTextColors(colorScheme[1], colorScheme[0]);
+			std::cout << "On";
+			UI::setTextColors(colorScheme[0], colorScheme[1]);
+			std::cout << "]";
+		}
+		std::cout << "\n";
+	}
+	// Focus Zone Sound status
+	{
+		colorScheme[0] = UI::black;
+		if (ProgramSettings::playSounds)
+			colorScheme[1] = UI::light_gray;
+		else colorScheme[1] = UI::dark_gray;
+		UI::setTextColors(colorScheme[0], colorScheme[1]);
+		std::cout << "(n) Focus Zone Sounds:	";
+		// on
+		if (!ProgramSettings::playFocusZoneSounds)
+		{
+			std::cout << "[";
+			UI::setTextColors(colorScheme[1], colorScheme[0]);
+			std::cout << "Off";
+			UI::setTextColors(colorScheme[0], colorScheme[1]);
+			std::cout << "] [";
+			std::cout << "On";
+			std::cout << "]";
+		}
+		// off
+		else if (ProgramSettings::playFocusZoneSounds)
+		{
+			std::cout << "[";
+			std::cout << "Off";
+			std::cout << "] [";
+			UI::setTextColors(colorScheme[1], colorScheme[0]);
+			std::cout << "On";
+			UI::setTextColors(colorScheme[0], colorScheme[1]);
+			std::cout << "]";
+		}
+		std::cout << "\n";
+	}
 	// a little space
 	std::cout << "\n";
-	// other functions
-	UI::setTextColors(UI::dark_gray, UI::white);
-	std::cout << "Other Functions:" << "\n";
-	UI::setTextColors(UI::black, UI::white);
-	std::cout << "a  :  Configure AFK detection bypasses" << "\n";
-	std::cout << "c  :  Configure Conduits" << "\n";
-	std::cout << "d  :  View/edit Focus descriptions" << "\n";
-	std::cout << "g  :  Manage Groups" << "\n";
-	std::cout << "s  :  Manage Spotlight 5" << "\n";
-	std::cout << "esc:  exit" << "\n";
+	UI::resetTextColors();
+	std::cout << "-----------------------" << "\n";
+	UI::setTextColors(UI::black, UI::dark_green);
+	std::cout << "Menus (will pause WFT):" << "\n";
+	UI::resetTextColors();
+	std::cout << "\n";
+	UI::setTextColors(UI::black, UI::dark_green);
+	std::cout << "(a) Detection Override Management" << "\n";
+	std::cout << "(c) Conduit Management" << "\n";
+	std::cout << "(d) Description Management" << "\n";
+	std::cout << "(s) Spotlight Management" << "\n";
+	std::cout << "(g) Group Management" << "\n";
+	UI::resetTextColors();
+	std::cout << "-----------------------" << "\n";
 	std::cout << "\n";
 	// user activity report
-	if (ProgramCache::userActivity)
-		std::cout << "(User is active.)";
-	else
-		std::cout << "(User is inactive.)";
+	std::string userActivityBar = "";
+	std::string userActivity = "";
+	unsigned int userActivityColor = UI::light_gray;
+	if (ProgramCache::userActivity) {
+		userActivity = "active";
+		userActivityBar = "+-----------------+\n";
+		userActivityColor = UI::light_magenta; }
+	else {
+		userActivity = "inactive";
+		userActivityBar = "+-------------------+\n";
+		userActivityColor = UI::dark_magenta; }
+	UI::resetTextColors();
+	std::cout << userActivityBar;
+	std::cout << "| User is ";
+	UI::setTextColors(UI::black, userActivityColor);
+	std::cout << userActivity;
+	UI::resetTextColors();
+	std::cout << ". |\n";
+	std::cout << userActivityBar;
 	// make room
 	std::cout << "\n";
 	UI::resetTextColors();
@@ -1493,12 +1623,12 @@ void toggleOverrideMode()
 	}
 }
 
-void determineFocusColor(focusWindow &passThrough)
+void processFocusLimits(focusWindow &passThrough)
 {
 	int backgroundFocus = 0;
 	int foregroundFocus = 7;
 	if (ProgramSettings::Display::conduitMode)
-		if (passThrough.conduits[ProgramCache::theTime->tm_hour])
+		if (passThrough.conduits[ProgramCache::theTime.tm_hour])
 			foregroundFocus = UI::light_cyan;
 	if (ProgramSettings::Display::spotlightMode)
 		if (passThrough.isInSpotlight)
@@ -1612,5 +1742,26 @@ void chooseOverride(Menu &passThrough)
 		}
 		else
 			ProgramSettings::currentOverride = passThrough.choices[overrideSelected - 1];
+	}
+}
+
+void enterMenu()
+{
+	if (WFT.requestNexus()) {
+		ProgramControl::Threads::displayThread = false;
+		ProgramControl::Threads::checkForUserCommandsThread = false;
+		ProgramControl::Threads::checkUserActivityThread = false;
+		ProgramControl::Threads::regularlyWriteDataThread = false;
+	}
+	std::this_thread::sleep_for(std::chrono::seconds(2));
+}
+
+void exitMenu()
+{
+	if (WFT.requestNexus()) {
+		ProgramControl::Threads::displayThread = true;
+		ProgramControl::Threads::checkForUserCommandsThread = true;
+		ProgramControl::Threads::checkUserActivityThread = true;
+		ProgramControl::Threads::regularlyWriteDataThread = true;
 	}
 }

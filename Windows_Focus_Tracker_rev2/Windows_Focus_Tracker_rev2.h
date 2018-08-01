@@ -12,7 +12,7 @@
 #include <atlbase.h>										// A2W and W2A conversion
 #include <algorithm>										/// needed?
 #include <Mmsystem.h>										// Sound playback
-#pragma comment(lib,"winmm.lib")	
+#pragma comment(lib,"winmm.lib")
 #include <thread>											// threads
 #include <chrono>											// chrono::seconds, etc
 #include <atomic>											// cross-thread variables
@@ -48,12 +48,13 @@ struct focusWindow
 	bool overridesAFK;										// switch to override the AFK detector while this focusWindow is active
 	bool isInSpotlight;										// Spotlight this focus?
 	bool conduits[24];										// Hourly conduit bools
-	unsigned int focusLimits[8];							// Hours/day (x2), hours/week (x2), hours/month (x2), hours/year (x2)
-	unsigned int warningTimings[2];							// Pre-lower limit warning, pre-upper limit warning
-	unsigned int totalDayHourMinSec[4];								// Total time spent in this focus
-	unsigned int yearlyStats[366][24];								// Year-long hourly stats for this focus object
+	unsigned int focusZones[8];								// Hours/day (x2), hours/week (x2), hours/month (x2), hours/year (x2)
+	unsigned int warningTimings[2];							// Pre-lower limit warning, pre-upper limit warning (in minutes)
+	unsigned int totalDayHourMinSec[4];						// Total time spent in this focus
+	unsigned int yearlyStats[366][24];						// Year-long hourly stats for this focus object
 	bool writeMe;											// Indicates to the program that changes have been made
 	bool deleteMe;											// Indicates to the program that it should be deleted from disk.
+	bool focusLimitPlayed[3];								// Indicates to the program which focusLimit sound to play.
 };
 
 // Nexus namespaces
@@ -105,14 +106,15 @@ namespace ProgramSettings
 		extern bool overrideMode;
 	}
 	extern std::vector<focusWindowGroup> groupList;
+	extern bool playSounds;
+	extern bool playFocusZoneSounds;
 }
 namespace ProgramCache
 {
 	extern Menu programMenu;
 
 	extern bool timeToSave;
-	// extern tm theTime;
-	extern struct tm * theTime;
+	extern tm theTime;
 	extern bool thisYearLeap;
 	extern bool lastYearLeap;
 	extern int thisYearSize;
@@ -123,6 +125,10 @@ namespace ProgramCache
 	extern POINT mouseSnapB;
 	extern std::vector<focusWindow> trackingSession;
 	extern focusWindow afkFocus;
+	extern int focusLimitSoundControllerCounterA;
+	extern int focusLimitSoundControllerCounterB;
+	extern std::string lastWindowClass;
+	extern std::string lastWindowTitle;
 	
 	/// experimental (needs testing)
 	extern focusWindow lastFiveFocus[5];
@@ -146,6 +152,7 @@ void displayFilterBase(focusWindow &sortMe);
 void sortLastFive(focusWindow &sortMe);
 void sortTopFive(focusWindow &sortMe);
 double getTotalTime(focusWindow &readMe);
+void playFocusZoneSound(focusWindow &passThrough);
 
 // File operations
 void readSettings();
@@ -172,7 +179,7 @@ void toggleSpotlightMode();
 void toggleOverrideMode();
 
 void displayDisplayStatus();
-void determineFocusColor(focusWindow &passThrough);
+void processFocusLimits(focusWindow &passThrough);
 void createOverride();
 void chooseOverride(Menu &passThrough);
 

@@ -41,14 +41,14 @@ void makeFocusWindow(focusWindow &passThrough)
 	passThrough.isInSpotlight = false;
 	for (unsigned int x = 0; x < 24; x++)
 		passThrough.conduits[x] = false;
-	passThrough.focusLimits[0] = 0;
-	passThrough.focusLimits[1] = 24;
-	passThrough.focusLimits[2] = 0;
-	passThrough.focusLimits[3] = 168;
-	passThrough.focusLimits[4] = 0;
-	passThrough.focusLimits[5] = 744;
-	passThrough.focusLimits[6] = 0;
-	passThrough.focusLimits[7] = 8784;
+	passThrough.focusZones[0] = 0;
+	passThrough.focusZones[1] = 24;
+	passThrough.focusZones[2] = 0;
+	passThrough.focusZones[3] = 168;
+	passThrough.focusZones[4] = 0;
+	passThrough.focusZones[5] = 744;
+	passThrough.focusZones[6] = 0;
+	passThrough.focusZones[7] = 8784;
 
 	passThrough.warningTimings[0] = 15;
 	passThrough.warningTimings[1] = 15;
@@ -141,12 +141,11 @@ void sortTopFive(focusWindow &sortMe)
 			sortMe.windowClass == ProgramCache::topFiveFocus[x].windowClass) {
 			atPosition = x;
 			break; }
-
 	// get the total
 	double sortMeTotal = getTotalTime(sortMe);
 	// declare some memory for comparison
 	double compareMeTotal = 0;
-
+	// sort new entry
 	if (atPosition == 5) {
 		for (unsigned int x = 0; x < 5; x++) {
 			compareMeTotal = getTotalTime(ProgramCache::topFiveFocus[x]);
@@ -158,11 +157,11 @@ void sortTopFive(focusWindow &sortMe)
 			}
 		}
 	}
-	
+	// if it is already the top focusWindow:
 	if (atPosition == 0) {
 		ProgramCache::topFiveFocus[0] = sortMe;
 		return; }
-
+	// if it is on the list somewhere other than the top:
 	if (atPosition < 5 && atPosition > 0) {
 		for (unsigned int x = atPosition; x > 0; x--) {
 			compareMeTotal = getTotalTime(ProgramCache::topFiveFocus[x - 1]);
@@ -199,11 +198,9 @@ void populateFilters()
 				z++;
 				break;
 			}
-	
 	if (ProgramCache::trackingSession.size() > 0)
 		for (unsigned int x = 0; x < ProgramCache::trackingSession.size(); x++)
 			sortTopFive(ProgramCache::trackingSession[x]);
-
 	unsigned int spotlightFivePosition = 0;
 	for (unsigned int x = 0; x < ProgramCache::trackingSession.size(); x++)
 	{
@@ -219,17 +216,16 @@ void populateFilters()
 	UI::setTextColors(UI::black, UI::dark_green);
 	std::cout << "Populated cross-session display filters OK.";
 	UI::resetTextColors();
-
 }
 
 void setLeapYearStatus()
 {
 	time_t ldt;
 	time(&ldt);
-	localtime_s(ProgramCache::theTime, &ldt);
+	localtime_s(&ProgramCache::theTime, &ldt);
 
-	int thisYear = ProgramCache::theTime->tm_year;
-	int lastYear = ProgramCache::theTime->tm_year - 1;
+	int thisYear = ProgramCache::theTime.tm_year;
+	int lastYear = ProgramCache::theTime.tm_year - 1;
 	if (lastYear % 4 == 0 && (lastYear % 100 != 0 || lastYear % 400 == 0))
 		ProgramCache::lastYearSize = 366;
 	if (thisYear % 4 == 0 && (thisYear % 100 != 0 || thisYear % 400 == 0))
@@ -241,4 +237,26 @@ void setLeapYearStatus()
 	UI::setTextColors(UI::black, UI::dark_green);
 	std::cout << "Set leap year status OK.";
 	UI::resetTextColors();
+}
+
+void playFocusZoneSound(focusWindow &passThrough)
+{
+	if (determineFocusLimitColor(passThrough) == UI::light_yellow) {
+		if (ProgramCache::focusLimitSoundControllerCounterA == 0)
+			PlaySound(TEXT("sounds/zrescue.wav"), NULL, SND_ASYNC);
+		if (passThrough.windowClass == ProgramCache::lastWindowClass &&
+			passThrough.windowTitle == ProgramCache::lastWindowTitle)
+			ProgramCache::focusLimitSoundControllerCounterA++;
+		else (ProgramCache::focusLimitSoundControllerCounterA = 0);
+		if (ProgramCache::focusLimitSoundControllerCounterA == 60)
+			ProgramCache::focusLimitSoundControllerCounterA = 0; }
+	if (determineFocusLimitColor(passThrough) == UI::light_red) {
+		if (ProgramCache::focusLimitSoundControllerCounterB == 0)
+			PlaySound(TEXT("sounds/ComBeep0.wav"), NULL, SND_ASYNC);
+		if (passThrough.windowClass == ProgramCache::lastWindowClass &&
+			passThrough.windowTitle == ProgramCache::lastWindowTitle)
+			ProgramCache::focusLimitSoundControllerCounterB++;
+		else (ProgramCache::focusLimitSoundControllerCounterB = 0);
+		if (ProgramCache::focusLimitSoundControllerCounterB == 5)
+			ProgramCache::focusLimitSoundControllerCounterB = 0; }
 }
