@@ -187,8 +187,10 @@ namespace WFT_Menus
 {
 	void populateOverrideMenu(Menu &passThrough);
 	void overrideMenu(Menu &passThrough);
-	void populateGroupMenu(Menu &passThrough, std::string custom);
+	void populateGroupMenu(Menu &passThrough);
 	void groupMenu(Menu &passThrough);
+	void focusZonesMenu(Menu &passThrough);
+	void populateFocusZonesMenu(Menu &passThrough);
 }
  
 void enterMenu();

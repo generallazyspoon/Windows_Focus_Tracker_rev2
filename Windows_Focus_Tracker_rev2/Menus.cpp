@@ -11,7 +11,7 @@ namespace WFT_Menus
 		passThrough.setMenu("Toggle Override mode");
 	}
 	void overrideMenu(Menu &passThrough);
-	void populateGroupMenu(Menu &passThrough, std::string custom) {
+	void populateGroupMenu(Menu &passThrough) {
 		passThrough.clearMenu();
 		passThrough.setMenu("View focus groups");
 		passThrough.setMenu("Create a focus group");
@@ -19,6 +19,7 @@ namespace WFT_Menus
 		passThrough.setMenu("Add a focus to a group");
 	}
 	void groupMenu(Menu &passThrough);
+	void focusZonesMenu(Menu &passThrough);
 }
 
 void WFT_Menus::overrideMenu(Menu &passThrough)
@@ -50,7 +51,7 @@ void WFT_Menus::overrideMenu(Menu &passThrough)
 		passThrough.clearMenu();
 		WFT_Menus::populateOverrideMenu(passThrough);
 		passThrough.displayMenu();
-		thisMenuSelection = UI::selector(passThrough.choices.size());
+		thisMenuSelection = UI::selector(1, passThrough.choices.size());
 		switch (thisMenuSelection)
 		{
 		case 0:
@@ -98,19 +99,17 @@ void WFT_Menus::overrideMenu(Menu &passThrough)
 void WFT_Menus::groupMenu(Menu &passThrough)
 {
 	enterMenu();
-	focusWindowGroup xContainer;
 	unsigned int thisMenuSelection;
-	std::list<unsigned int> focusIndex;
 	do {
 		UI::clearIt();
 		std::cout << "Group menu:" << "\n\n";
 		UI::resetTextColors();
 		passThrough.clearMenu();
 		// Establish the menu
-		WFT_Menus::populateGroupMenu(passThrough, "");
+		WFT_Menus::populateGroupMenu(passThrough);
 		// Display the menu
 		passThrough.displayMenu();
-		thisMenuSelection = UI::selector(passThrough.choices.size());
+		thisMenuSelection = UI::selector(1, passThrough.choices.size());
 		switch (thisMenuSelection)
 		{
 		case 0:
@@ -152,6 +151,167 @@ void WFT_Menus::groupMenu(Menu &passThrough)
 	exitMenu();
 }
 
+void WFT_Menus::focusZonesMenu(Menu &passThrough)
+{
+	enterMenu();
+	unsigned int thisMenuSelectionA;
+	unsigned int thisMenuSelectionB;
+	unsigned int thisMenuSelectionC;
+	do {
+		UI::clearIt();
+		std::cout << "View/set Focus Zones for which Focus?" << "\n\n";
+		UI::resetTextColors();
+		passThrough.clearMenu();
+		// Establish the menu
+		setTrackingSessionMenu(passThrough);
+		// Display the menu
+		passThrough.displayMenu();
+		thisMenuSelectionA = UI::selector(1, passThrough.choices.size());
+		UI::clearIt();
+		do {
+			std::cout << "You have selected:" << "\n\n";
+			std::cout << ProgramCache::trackingSession[thisMenuSelectionA - 1].windowClass << " - ";
+			std::cout << ProgramCache::trackingSession[thisMenuSelectionA - 1].windowTitle << ".";
+			std::cout << "\n\n";
+			UI::setTextColors(UI::black, UI::light_yellow);
+			std::cout << "(Lower limit)" << "\n";
+			UI::setTextColors(UI::black, UI::light_red);
+			std::cout << "(Upper limit)" << "\n\n";
+			UI::resetTextColors();
+			// display current values.
+			std::cout << "Hours per calendar day:  ";
+			UI::setTextColors(UI::black, UI::light_yellow);
+			std::cout << ProgramCache::trackingSession[thisMenuSelectionA - 1].focusZones[0];
+			UI::resetTextColors();
+			std::cout << ", ";
+			UI::setTextColors(UI::black, UI::light_red);
+			std::cout << ProgramCache::trackingSession[thisMenuSelectionA - 1].focusZones[1] << "\n";
+			UI::resetTextColors();
+			std::cout << "Hours per calendar week:  ";
+			UI::setTextColors(UI::black, UI::light_yellow);
+			std::cout << ProgramCache::trackingSession[thisMenuSelectionA - 1].focusZones[0];
+			UI::resetTextColors();
+			std::cout << ", ";
+			UI::setTextColors(UI::black, UI::light_red);
+			std::cout << ProgramCache::trackingSession[thisMenuSelectionA - 1].focusZones[1] << "\n";
+			UI::resetTextColors();
+			std::cout << "Hours per calendar month:  ";
+			UI::setTextColors(UI::black, UI::light_yellow);
+			std::cout << ProgramCache::trackingSession[thisMenuSelectionA - 1].focusZones[0];
+			UI::resetTextColors();
+			std::cout << ", ";
+			UI::setTextColors(UI::black, UI::light_red);
+			std::cout << ProgramCache::trackingSession[thisMenuSelectionA - 1].focusZones[1] << "\n";
+			UI::resetTextColors();
+			std::cout << "Hours per calendar year:  ";
+			UI::setTextColors(UI::black, UI::light_yellow);
+			std::cout << ProgramCache::trackingSession[thisMenuSelectionA - 1].focusZones[0];
+			UI::resetTextColors();
+			std::cout << ", ";
+			UI::setTextColors(UI::black, UI::light_red);
+			std::cout << ProgramCache::trackingSession[thisMenuSelectionA - 1].focusZones[1] << "\n";
+			UI::resetTextColors();
+			// ask the user which range to modify (or exit)
+			std::cout << "\n";
+			std::cout << "Which Focus Zone would you like to modify?";
+			passThrough.clearMenu();
+			passThrough.setMenu("Hours per day.");
+			passThrough.setMenu("Hours per week.");
+			passThrough.setMenu("Hours per month.");
+			passThrough.setMenu("Hours per year.");
+			passThrough.displayMenu();
+			thisMenuSelectionB = UI::selector(1, passThrough.choices.size());
+			unsigned int calibrator[2] = {0, 0};
+			if (thisMenuSelectionB == 1) {
+				calibrator[0] = 0;
+				calibrator[1] = 1; }
+			else if (thisMenuSelectionB == 2) {
+				calibrator[0] = 2;
+				calibrator[1] = 3; }
+			else if (thisMenuSelectionB == 3) {
+				calibrator[0] = 4;
+				calibrator[1] = 5; }
+			else if (thisMenuSelectionB == 4) {
+				calibrator[0] = 6;
+				calibrator[1] = 7; }
+			do {
+				UI::clearIt();
+				std::cout << "You have selected:" << "\n\n";
+				std::cout << ProgramCache::trackingSession[thisMenuSelectionA - 1].windowClass << " - ";
+				std::cout << ProgramCache::trackingSession[thisMenuSelectionA - 1].windowTitle << ".";
+				std::cout << "\n\n";
+				UI::setTextColors(UI::black, UI::white);
+				std::cout << passThrough.choices[thisMenuSelectionB - 1] << ":" << "\n";
+				UI::resetTextColors();
+				std::cout << "Lower limit:  ";
+				UI::setTextColors(UI::black, UI::light_yellow);
+				std::cout << ProgramCache::trackingSession[thisMenuSelectionA - 1].focusZones[calibrator[0]] << "\n";
+				UI::resetTextColors();
+				std::cout << "Upper limit:  ";
+				UI::setTextColors(UI::black, UI::light_red);
+				std::cout << ProgramCache::trackingSession[thisMenuSelectionA - 1].focusZones[calibrator[1]] << "\n\n";
+				UI::resetTextColors();
+				std::cout << "Which value would you like to modify?" << "\n\n";
+				passThrough.clearMenu();
+				passThrough.setMenu("Lower limit.");
+				passThrough.setMenu("Upper limit.");
+				passThrough.displayMenu();
+				thisMenuSelectionC = UI::selector(1, 2);
+				std::cout << "\n";
+				switch (thisMenuSelectionC)
+				{
+				case 0:
+					// do anything? not really necessary.
+					break;
+				case 1:
+					// handle lower limit changes
+					std::cout << "Enter a new lower limit using the prompt below." << "\n\n";
+					unsigned int tempChange = UI::selector(0, ProgramCache::trackingSession[thisMenuSelectionA - 1].focusZones[calibrator[1]]);
+					std::cout << "\n";
+					if (UI::commitChanges()) {
+						ProgramCache::trackingSession[thisMenuSelectionA - 1].focusZones[0] = tempChange;
+						ProgramCache::trackingSession[thisMenuSelectionA - 1].writeMe = true;
+						UI::setTextColors(UI::black, UI::light_red);
+						std::cout << "Lower limit updated.";
+						std::this_thread::sleep_for(std::chrono::seconds(2)); }
+					else {
+						UI::setTextColors(UI::black, UI::light_red);
+						std::cout << "Lower limit changes abandoned.";
+						std::this_thread::sleep_for(std::chrono::seconds(2));
+					}
+					break;
+				case 2:
+					// handle upper limit changes
+					std::cout << "Enter a new upper limit using the prompt below." << "\n\n";
+					unsigned int tempChange = UI::selector(ProgramCache::trackingSession[thisMenuSelectionA - 1].focusZones[calibrator[0]], 24);
+					std::cout << "\n";
+					if (UI::commitChanges()) {
+						ProgramCache::trackingSession[thisMenuSelectionA - 1].focusZones[1] = tempChange;
+						ProgramCache::trackingSession[thisMenuSelectionA - 1].writeMe = true;
+						UI::setTextColors(UI::black, UI::light_red);
+						std::cout << "Lower limit updated.";
+						std::this_thread::sleep_for(std::chrono::seconds(2));
+					}
+					else {
+						UI::setTextColors(UI::black, UI::light_red);
+						std::cout << "Lower limit changes abandoned.";
+						std::this_thread::sleep_for(std::chrono::seconds(2));
+					}
+					break;
+				default:
+					UI::error(0);
+					break;
+				}
+			} while (thisMenuSelectionB > 0);
+		} while (thisMenuSelectionB > 0);
+	} while (thisMenuSelectionA > 0);
+	UI::setTextColors(UI::black, UI::dark_green);
+	std::cout << "Returning to tracker.  (Please wait...)";
+	std::this_thread::sleep_for(std::chrono::seconds(2));
+	UI::resetTextColors();
+	exitMenu();
+}
+
 unsigned int groupSelectDisplay(Menu &passThrough)
 {
 	passThrough.clearMenu();
@@ -168,7 +328,7 @@ unsigned int groupSelectDisplay(Menu &passThrough)
 	}
 	
 	passThrough.displayMenu();
-	return UI::selector(passThrough.choices.size());
+	return UI::selector(1, passThrough.choices.size());
 }
 
 void viewGroup(Menu &passThrough)
@@ -423,7 +583,7 @@ void populateGroup(Menu &passThrough)
 			UI::resetTextColors(); }
 		std::cout << "\n";
 		// select the group to toggle on/off
-		addThisFocusToGroup = UI::selector(passThrough.choices.size());
+		addThisFocusToGroup = UI::selector(1, passThrough.choices.size());
 		// early exit code
 		if (addThisFocusToGroup == 0) return;
 		// add to group struct
@@ -524,7 +684,7 @@ void descriptionManagement(Menu &passThrough)
 				std::cout << "\n";
 			}
 			std::cout << "\n";
-			unsigned int chosenFocus = UI::selector(ProgramCache::trackingSession.size());
+			unsigned int chosenFocus = UI::selector(1, ProgramCache::trackingSession.size());
 			if (chosenFocus == 0)
 				break;
 			UI::clearIt();

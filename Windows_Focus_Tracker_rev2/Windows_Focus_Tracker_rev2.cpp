@@ -637,6 +637,22 @@ void checkForUserCommands()
 				FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
 				descriptionManagement(ProgramCache::programMenu);
 			}
+			// "l" - Set Focus Zones
+			else if (GetAsyncKeyState(0x4D))
+			{
+				ProgramCache::systemMessage = "Entering Focus Zone management.  (Please wait...)";
+				ProgramControl::userInputOK = false;
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+				if (GetAsyncKeyState(0x4D) & 0x8000)
+				{
+					ProgramControl::userHoldingKey = true;
+					UI::setTextColors(UI::black, UI::light_red);
+					std::cout << "Focus less on this negative energy, man." << "\n\n";
+					UI::resetTextColors();
+				}
+				FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
+				WFT_Menus::focusZonesMenu(ProgramCache::programMenu);
+			}
 			// "m" - toggle all sounds
 			else if (GetAsyncKeyState(0x4D))
 			{
@@ -1539,11 +1555,12 @@ void displayDisplayStatus()
 	UI::resetTextColors();
 	std::cout << "\n";
 	UI::setTextColors(UI::black, UI::dark_green);
-	std::cout << "(a) Detection Override Management" << "\n";
+	std::cout << "(a) AFK Detection Override Management" << "\n";
 	std::cout << "(c) Conduit Management" << "\n";
 	std::cout << "(d) Description Management" << "\n";
-	std::cout << "(s) Spotlight Management" << "\n";
 	std::cout << "(g) Group Management" << "\n";
+	std::cout << "(l) Focus Zone Management" << "\n";
+	std::cout << "(s) Spotlight Management" << "\n";
 	UI::resetTextColors();
 	std::cout << "-----------------------" << "\n";
 	std::cout << "\n";
