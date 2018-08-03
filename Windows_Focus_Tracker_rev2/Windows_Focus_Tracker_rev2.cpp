@@ -592,7 +592,7 @@ void checkForUserCommands()
 			// "a" - Override AFK toggling
 			if (GetAsyncKeyState(0x41))
 			{
-				ProgramCache::systemMessage = "Starting AFK Detection override menu.  (Please wait...)";
+				ProgramCache::systemMessage = "Starting AFK Detection Management.  (Please wait...)";
 				ProgramControl::userInputOK = false;
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 				if (GetAsyncKeyState(0x41) & 0x8000)
@@ -608,7 +608,7 @@ void checkForUserCommands()
 			// "c" - Manage Conduits
 			if (GetAsyncKeyState(0x43))
 			{
-				ProgramCache::systemMessage = "Starting Conduit management.  (Please wait...)";
+				ProgramCache::systemMessage = "Starting Conduit Management.  (Please wait...)";
 				ProgramControl::userInputOK = false;
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 				if (GetAsyncKeyState(0x43) & 0x8000)
@@ -624,7 +624,7 @@ void checkForUserCommands()
 			// "d" - Description management
 			else if (GetAsyncKeyState(0x44))
 			{
-				ProgramCache::systemMessage = "Entering Description management.  (Please wait...)";
+				ProgramCache::systemMessage = "Entering Description Management.  (Please wait...)";
 				ProgramControl::userInputOK = false;
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 				if (GetAsyncKeyState(0x44) & 0x8000)
@@ -638,9 +638,9 @@ void checkForUserCommands()
 				descriptionManagement(ProgramCache::programMenu);
 			}
 			// "l" - Set Focus Zones
-			else if (GetAsyncKeyState(0x4D))
+			else if (GetAsyncKeyState(0x4C))
 			{
-				ProgramCache::systemMessage = "Entering Focus Zone management.  (Please wait...)";
+				ProgramCache::systemMessage = "Entering Focus Zone Management.  (Please wait...)";
 				ProgramControl::userInputOK = false;
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 				if (GetAsyncKeyState(0x4D) & 0x8000)
@@ -734,7 +734,7 @@ void checkForUserCommands()
 			// "s" - Spotlight management
 			else if (GetAsyncKeyState(0x53))
 			{
-				ProgramCache::systemMessage = "Entering Spotlight management.  (Please wait...)";
+				ProgramCache::systemMessage = "Entering Spotlight Management.  (Please wait...)";
 				ProgramControl::userInputOK = false;
 				std::this_thread::sleep_for(std::chrono::seconds(1));
 				if (GetAsyncKeyState(0x53) & 0x8000)
@@ -1555,7 +1555,7 @@ void displayDisplayStatus()
 	UI::resetTextColors();
 	std::cout << "\n";
 	UI::setTextColors(UI::black, UI::dark_green);
-	std::cout << "(a) AFK Detection Override Management" << "\n";
+	std::cout << "(a) AFK Detection Management" << "\n";
 	std::cout << "(c) Conduit Management" << "\n";
 	std::cout << "(d) Description Management" << "\n";
 	std::cout << "(g) Group Management" << "\n";
