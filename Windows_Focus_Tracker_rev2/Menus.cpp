@@ -228,7 +228,7 @@ void WFT_Menus::focusZonesMenu(Menu &passThrough)
 			menuSelectB = UI::selector(1, passThrough.choices.size());
 			if (menuSelectB == 0)
 				break;
-			unsigned int focusZoneIndex[4][3] = { 
+			unsigned int focusZoneIndex[4][3] = {
 				{ 0, 1, 24 },
 				{ 2, 3, 168 },
 				{ 4, 5, 672 },
@@ -277,7 +277,8 @@ void WFT_Menus::focusZonesMenu(Menu &passThrough)
 					// early exit
 					if (tempChange == 0) {
 						std::cout << "\n";
-						break; }
+						break;
+					}
 					// if user wants to set the value to 0
 					if (tempChange == focusZoneIndex[focusZoneSelected][3] + 1)
 						tempChange = 0;
@@ -286,10 +287,12 @@ void WFT_Menus::focusZonesMenu(Menu &passThrough)
 						for (; cog > 0; cog--)
 							if (ProgramCache::trackingSession[focusWindowSelection - 1].focusZones[(focusZoneIndex[cog - 1][1])] < ProgramCache::trackingSession[focusWindowSelection - 1].focusZones[(focusZoneIndex[cog - 1][0])]) {
 								adjustableValueDetected = true;
-								adjustableValuePosition.push_back(cog);	}
+								adjustableValuePosition.push_back(cog);
+							}
 					if (adjustableValueDetected) {
 						std::cout << "Incongruent values detected.  Adjust ";
-						writeIt = UI::yesNo(); }
+						writeIt = UI::yesNo();
+					}
 					std::cout << "\n";
 					if (writeIt, UI::commitChanges()) {
 						// update original selection
@@ -313,34 +316,34 @@ void WFT_Menus::focusZonesMenu(Menu &passThrough)
 						std::cout << "Lower limit changes abandoned.";
 						UI::resetTextColors();
 						std::this_thread::sleep_for(std::chrono::seconds(2));
-
-					if (menuSelectC == 2) {
-						// handle upper limit changes
-						std::cout << "Enter a new upper limit using the prompt below." << "\n\n";
-						tempChange = UI::selector(ProgramCache::trackingSession[focusWindowSelection - 1].focusZones[focusZoneIndex[focusZoneSelected][0]], ProgramCache::trackingSession[focusWindowSelection - 1].focusZones[focusZoneIndex[focusZoneSelected][2]]);
-						if (tempChange == 0) {
-							std::cout << "\n";
-							break;
-						}
+					}
+				}
+				// handle upper limit changes
+				else if (menuSelectC == 2) {
+					std::cout << "Enter a new upper limit using the prompt below." << "\n\n";
+					tempChange = UI::selector(ProgramCache::trackingSession[focusWindowSelection - 1].focusZones[focusZoneIndex[focusZoneSelected][0]], ProgramCache::trackingSession[focusWindowSelection - 1].focusZones[focusZoneIndex[focusZoneSelected][2]]);
+					if (tempChange == 0) {
 						std::cout << "\n";
-						if (UI::commitChanges()) {
-							std::cout << "\n\n";
-							ProgramCache::trackingSession[focusWindowSelection - 1].focusZones[focusZoneIndex[focusZoneSelected][1]] = tempChange;
-							ProgramCache::trackingSession[focusWindowSelection - 1].writeMe = true;
-							UI::setTextColors(UI::black, UI::light_red);
-							std::cout << "Upper limit updated.";
-							UI::resetTextColors();
-							std::this_thread::sleep_for(std::chrono::seconds(2));
-						}
-						else {
-							std::cout << "\n\n";
-							UI::setTextColors(UI::black, UI::light_red);
-							std::cout << "Upper limit changes abandoned.";
-							UI::resetTextColors();
-							std::this_thread::sleep_for(std::chrono::seconds(2));
-						}
 						break;
 					}
+					std::cout << "\n";
+					if (UI::commitChanges()) {
+						std::cout << "\n\n";
+						ProgramCache::trackingSession[focusWindowSelection - 1].focusZones[focusZoneIndex[focusZoneSelected][1]] = tempChange;
+						ProgramCache::trackingSession[focusWindowSelection - 1].writeMe = true;
+						UI::setTextColors(UI::black, UI::light_red);
+						std::cout << "Upper limit updated.";
+						UI::resetTextColors();
+						std::this_thread::sleep_for(std::chrono::seconds(2));
+					}
+					else {
+						std::cout << "\n\n";
+						UI::setTextColors(UI::black, UI::light_red);
+						std::cout << "Upper limit changes abandoned.";
+						UI::resetTextColors();
+						std::this_thread::sleep_for(std::chrono::seconds(2));
+					}
+				}
 			} while (menuSelectB > 0);
 		} while (menuSelectB > 0);
 	} while (focusWindowSelection > 0);
